@@ -440,7 +440,7 @@
   <div class="card full-width result-section" id="pippitResult">
     <div class="result-header">
       <div class="card-title" style="margin-bottom:0"><span class="step-dot"></span> Prompt Siap Pakai</div>
-      <span class="result-badge pippit">→ Paste langsung ke Pippit AI</span>
+      <span class="result-badge pippit">→ Paste ke ChatGPT dulu</span>
     </div>
     <div class="result-box pippit-result" id="pippitResultBox"></div>
     <button class="btn-copy pippit-copy" id="pippitCopyBtn" onclick="doCopy('pippitResultBox','pippitCopyBtn','pippit-copy','pippit')">📋 Copy to Clipboard</button>
@@ -559,7 +559,7 @@ let currentTool = 'pippit';
 const toolMeta = {
   pippit: {
     cls:'pippit', icon:'🎨', title:'MODE: PIPPIT AI',
-    desc:'Form di bawah menghasilkan <strong>prompt final yang langsung di-paste ke Pippit AI</strong>. Pippit akan men-generate video secara otomatis.'
+    desc:'Form di bawah menghasilkan <strong>template untuk ChatGPT</strong>. Setelah di-paste ke ChatGPT, copy prompt ke Pippit satu per satu.'
   },
   flow: {
     cls:'flow', icon:'🌊', title:'MODE: GOOGLE FLOW',
