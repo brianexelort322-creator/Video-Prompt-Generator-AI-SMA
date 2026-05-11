@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Video Prompt Generator — HIMSI UAJY</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:          #0a0f1e;
+      --surface:     #111827;
+      --surface2:    #1a2540;
+      --border:      #1e3a5f;
+      --teal:        #00c9a7;
+      --teal-dim:    #00876e;
+      --teal-glow:   rgba(0,201,167,.18);
+      --text:        #e2e8f0;
+      --muted:       #64748b;
+      --accent:      #38bdf8;
+      --orange:      #fb923c;
+      --orange-dim:  rgba(251,146,60,.3);
+      --orange-glow: rgba(251,146,60,.15);
+      --danger:      #f87171;
+      --card-shadow: 0 0 40px rgba(0,201,167,.07);
+    }
+    [data-theme="light"] {
+      --bg:        #f0f4ff;
+      --surface:   #ffffff;
+      --surface2:  #e8f0ff;
+      --border:    #c7d7f5;
+      --text:      #0f172a;
+      --muted:     #64748b;
+      --card-shadow: 0 4px 30px rgba(0,0,0,.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; transition: background .3s, color .3s; overflow-x: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0; opacity: .5;
+    }
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 500px; height: 500px; background: rgba(0,201,167,.07); top: -150px; right: -100px; }
+    .orb-2 { width: 400px; height: 400px; background: rgba(56,189,248,.05); bottom: -100px; left: -100px; }
+
+    /* ── HEADER ── */
+    header {
+      position: relative; z-index: 10;
+      padding: 1.5rem 1.5rem 1rem;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border); backdrop-filter: blur(12px);
+    }
+    .brand { display: flex; align-items: center; gap: .75rem; }
+    .brand-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--teal), var(--accent));
+      display: grid; place-items: center; font-size: 1rem;
+      box-shadow: 0 0 16px var(--teal-glow);
+    }
+    .brand-text { font-family: 'Space Mono', monospace; font-size: .85rem; font-weight: 700; }
+    .brand-sub  { font-size: .65rem; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+    .theme-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); border-radius: 50%; width: 38px; height: 38px;
+      cursor: pointer; font-size: 1rem; display: grid; place-items: center; transition: all .2s;
+    }
+    .theme-btn:hover { border-color: var(--teal); box-shadow: 0 0 10px var(--teal-glow); }
+
+    /* ── HERO ── */
+    .hero { position: relative; z-index: 2; text-align: center; padding: 3rem 1.5rem 1.5rem; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: var(--teal-glow); border: 1px solid var(--teal-dim);
+      color: var(--teal); border-radius: 99px;
+      padding: .3rem 1rem; font-size: .72rem; letter-spacing: .08em;
+      text-transform: uppercase; font-weight: 700; margin-bottom: 1.25rem;
+      animation: pulse-badge 3s ease-in-out infinite;
+    }
+    @keyframes pulse-badge { 0%,100%{box-shadow:0 0 0 0 var(--teal-glow)} 50%{box-shadow:0 0 14px 4px var(--teal-glow)} }
+    .hero h1 {
+      font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 700; line-height: 1.1;
+      background: linear-gradient(135deg, var(--text) 40%, var(--teal));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: .75rem;
+    }
+    .hero p { color: var(--muted); font-size: .95rem; max-width: 520px; margin: 0 auto; }
+
+    /* ── TOOL SWITCHER ── */
+    .tool-switcher-wrap {
+      position: relative; z-index: 2;
+      display: flex; justify-content: center; padding: 1.5rem 1rem 0;
+    }
+    .tool-switcher {
+      display: inline-flex;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: .35rem; gap: .35rem;
+      box-shadow: var(--card-shadow);
+    }
+    .tool-btn {
+      display: flex; align-items: center; gap: .6rem;
+      padding: .65rem 1.4rem; border-radius: 10px;
+      border: none; cursor: pointer; font-family: 'Space Mono', monospace;
+      font-size: .8rem; font-weight: 700; letter-spacing: .04em;
+      transition: all .25s; background: transparent; color: var(--muted);
+    }
+    .tool-btn .tool-icon {
+      width: 26px; height: 26px; border-radius: 7px;
+      display: grid; place-items: center; font-size: .85rem;
+      background: var(--surface2); transition: all .25s;
+    }
+    .tool-btn.active-pippit { background: var(--teal-glow); color: var(--teal); box-shadow: 0 0 12px var(--teal-glow); }
+    .tool-btn.active-pippit .tool-icon { background: var(--teal); color: #0a0f1e; }
+    .tool-btn.active-flow { background: var(--orange-glow); color: var(--orange); box-shadow: 0 0 12px var(--orange-glow); }
+    .tool-btn.active-flow .tool-icon { background: var(--orange); color: #0a0f1e; }
+
+    /* ── TOOL INFO BOX ── */
+    .tool-info-outer {
+      position: relative; z-index: 2;
+      max-width: 960px; margin: 1.25rem auto 0; padding: 0 1rem;
+    }
+    .tool-info-box {
+      border-radius: 12px; padding: .85rem 1.2rem;
+      font-size: .82rem; line-height: 1.6;
+      display: flex; align-items: flex-start; gap: .75rem;
+    }
+    .tool-info-box.pippit { background: var(--teal-glow); border: 1px solid var(--teal-dim); color: var(--teal); }
+    .tool-info-box.flow   { background: var(--orange-glow); border: 1px solid var(--orange-dim); color: var(--orange); }
+    .tool-info-box .info-icon { font-size: 1.1rem; flex-shrink: 0; }
+    .tool-info-box b { display: block; font-family: 'Space Mono', monospace; font-size: .7rem; letter-spacing: .08em; margin-bottom: .2rem; }
+
+    /* ── MAIN GRID ── */
+    main {
+      position: relative; z-index: 2;
+      max-width: 960px; margin: 0 auto;
+      padding: 1.5rem 1rem 4rem;
+      display: grid; grid-template-columns: 1fr; gap: 1.5rem;
+    }
+    @media (min-width: 720px) {
+      main { grid-template-columns: 1fr 1fr; }
+      .full-width { grid-column: 1 / -1; }
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 18px; padding: 1.5rem;
+      box-shadow: var(--card-shadow); transition: border-color .25s;
+      animation: slide-up .3s ease both;
+    }
+    .card:focus-within { border-color: var(--teal); }
+    .card.flow-card:focus-within { border-color: var(--orange); }
+    @keyframes slide-up { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+    .card-title {
+      font-family: 'Space Mono', monospace; font-size: .72rem;
+      letter-spacing: .12em; text-transform: uppercase; color: var(--teal);
+      margin-bottom: 1rem; display: flex; align-items: center; gap: .5rem;
+    }
+    .card-title.flow { color: var(--orange); }
+    .card-title .num {
+      background: var(--teal-glow); border: 1px solid var(--teal-dim);
+      border-radius: 6px; padding: .1rem .4rem; font-size: .65rem;
+    }
+    .card-title.flow .num { background: var(--orange-glow); border-color: var(--orange-dim); }
+
+    /* ── FORM ELEMENTS ── */
+    label { display: block; font-size: .82rem; color: var(--muted); margin-bottom: .4rem; font-weight: 500; }
+    input[type="text"], input[type="number"], textarea, select {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); border-radius: 10px; padding: .7rem 1rem; font-size: .9rem;
+      font-family: 'DM Sans', sans-serif; outline: none; transition: border-color .2s, box-shadow .2s; appearance: none;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-glow); }
+    .flow-active input:focus, .flow-active select:focus { border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-glow); }
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: '▾'; position: absolute; right: .9rem; top: 50%;
+      transform: translateY(-50%); color: var(--teal); pointer-events: none; font-size: .85rem;
+    }
+    .flow-active .select-wrap::after { color: var(--orange); }
+
+    /* ── PILLS ── */
+    .pill-group { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .pill-group input { display: none; }
+    .pill-group label {
+      cursor: pointer; border: 1px solid var(--border); border-radius: 99px;
+      padding: .35rem .9rem; font-size: .82rem; color: var(--muted);
+      background: var(--surface2); transition: all .2s; margin: 0;
+    }
+    .pill-group input:checked + label {
+      border-color: var(--teal); color: var(--teal);
+      background: var(--teal-glow); box-shadow: 0 0 8px var(--teal-glow);
+    }
+    .pill-group.flow-pill input:checked + label {
+      border-color: var(--orange); color: var(--orange);
+      background: var(--orange-glow); box-shadow: 0 0 8px var(--orange-glow);
+    }
+
+    /* ── SCENE SLIDER ── */
+    .slider-wrap { display: flex; align-items: center; gap: 1rem; margin-top: .25rem; }
+    input[type="range"] {
+      flex: 1; appearance: none; height: 6px;
+      background: var(--surface2); border-radius: 99px; outline: none; border: 1px solid var(--border);
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none; width: 20px; height: 20px; border-radius: 50%;
+      background: var(--orange); cursor: pointer;
+      box-shadow: 0 0 8px var(--orange-glow); border: 2px solid var(--bg);
+    }
+    .scene-badge {
+      font-family: 'Space Mono', monospace; font-weight: 700; font-size: 1.1rem; color: var(--orange);
+      min-width: 2.5rem; text-align: center;
+      background: var(--orange-glow); border: 1px solid var(--orange-dim);
+      border-radius: 8px; padding: .25rem .5rem;
+    }
+    .scene-note {
+      font-size: .72rem; color: var(--muted); margin-top: .6rem;
+      background: var(--surface2); border-radius: 8px; padding: .5rem .75rem; border: 1px solid var(--border);
+    }
+    .scene-note strong { color: var(--orange); }
+
+    /* ── PREVIEW BOX ── */
+    .preview-box {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1rem 1.2rem;
+      font-size: .82rem; color: var(--muted); line-height: 1.7; min-height: 80px; white-space: pre-wrap;
+    }
+    .hl      { color: var(--teal); font-weight: 600; }
+    .hl-flow { color: var(--orange); font-weight: 600; }
+    .ph      { color: var(--border); font-style: italic; }
+
+    /* ── GENERATE BUTTON ── */
+    .btn-generate {
+      width: 100%; padding: 1rem; border: none; border-radius: 12px;
+      font-family: 'Space Mono', monospace; font-size: .9rem; font-weight: 700; letter-spacing: .04em;
+      color: #0a0f1e; cursor: pointer; transition: transform .15s, box-shadow .2s;
+      position: relative; overflow: hidden;
+    }
+    .btn-generate.pippit-btn {
+      background: linear-gradient(135deg, var(--teal), var(--accent));
+      box-shadow: 0 4px 24px rgba(0,201,167,.25);
+    }
+    .btn-generate.flow-btn {
+      background: linear-gradient(135deg, var(--orange), #fbbf24);
+      box-shadow: 0 4px 24px rgba(251,146,60,.25);
+    }
+    .btn-generate::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(to right, transparent 40%, rgba(255,255,255,.15));
+      transform: translateX(-100%); transition: transform .4s;
+    }
+    .btn-generate:hover { transform: translateY(-2px); }
+    .btn-generate:hover::after { transform: translateX(100%); }
+    .btn-generate:active { transform: translateY(0); }
+
+    /* ── RESULT BOX ── */
+    .result-section { display: none; animation: slide-up .35s ease both; }
+    .result-section.visible { display: block; }
+    .result-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: .85rem; flex-wrap: wrap; gap: .5rem;
+    }
+    .result-badge {
+      font-family: 'Space Mono', monospace; font-size: .65rem;
+      font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      padding: .25rem .75rem; border-radius: 99px;
+    }
+    .result-badge.pippit { background: var(--teal-glow); color: var(--teal); border: 1px solid var(--teal-dim); }
+    .result-badge.flow   { background: var(--orange-glow); color: var(--orange); border: 1px solid var(--orange-dim); }
+    .result-box {
+      background: var(--surface2); border-radius: 14px; padding: 1.25rem;
+      font-size: .88rem; line-height: 1.8; color: var(--text); white-space: pre-wrap;
+    }
+    .result-box.pippit-result { border: 1px dashed var(--teal-dim); }
+    .result-box.flow-result   { border: 1px dashed var(--orange-dim); }
+    .dest-note {
+      margin-top: .75rem; padding: .65rem 1rem; border-radius: 10px;
+      font-size: .78rem; line-height: 1.5;
+    }
+    .dest-note.flow { background: var(--orange-glow); border: 1px solid var(--orange-dim); color: var(--orange); }
+    .dest-note strong { font-family: 'Space Mono', monospace; font-size: .7rem; display: block; margin-bottom: .2rem; }
+    .btn-copy {
+      margin-top: .75rem; width: 100%; padding: .75rem; border-radius: 10px;
+      font-family: 'Space Mono', monospace; font-size: .82rem; font-weight: 700;
+      cursor: pointer; transition: all .2s; letter-spacing: .04em; background: transparent;
+    }
+    .btn-copy.pippit-copy { border: 1px solid var(--teal); color: var(--teal); }
+    .btn-copy.pippit-copy:hover { background: var(--teal-glow); }
+    .btn-copy.pippit-copy.copied { background: var(--teal); color: #0a0f1e; }
+    .btn-copy.flow-copy { border: 1px solid var(--orange); color: var(--orange); }
+    .btn-copy.flow-copy:hover { background: var(--orange-glow); }
+    .btn-copy.flow-copy.copied { background: var(--orange); color: #0a0f1e; }
+
+    /* ── STEP DOT ── */
+    .step-dot {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      box-shadow: 0 0 8px var(--teal); background: var(--teal); margin-right: .3rem;
+    }
+    .step-dot.flow { background: var(--orange); box-shadow: 0 0 8px var(--orange-glow); }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative; z-index: 2; text-align: center; padding: 2rem 1rem;
+      font-size: .72rem; color: var(--muted); border-top: 1px solid var(--border); letter-spacing: .08em;
+    }
+    footer span { color: var(--teal); font-family: 'Space Mono', monospace; font-weight: 700; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+      font-family: 'Space Mono', monospace; font-weight: 700; font-size: .8rem;
+      padding: .65rem 1.5rem; border-radius: 99px;
+      opacity: 0; transition: opacity .3s; z-index: 999; pointer-events: none;
+    }
+    #toast.show-pippit { opacity:1; background: var(--teal); color: #0a0f1e; }
+    #toast.show-flow   { opacity:1; background: var(--orange); color: #0a0f1e; }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="brand">
+    <div class="brand-icon">🎬</div>
+    <div>
+      <div class="brand-text">VidPrompt.AI</div>
+      <div class="brand-sub">Generator Prompt Video Edukasi</div>
+    </div>
+  </div>
+  <button class="theme-btn" id="themeBtn" title="Toggle tema">🌙</button>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">✦ Workshop HIMSI UAJY ✦</div>
+  <h1>Generate Prompt<br>Video Edukasi AI</h1>
+  <p>Pilih tools, isi form, dan dapatkan prompt siap pakai. Tinggal copy–paste!</p>
+</div>
+
+<!-- TOOL SWITCHER -->
+<div class="tool-switcher-wrap">
+  <div class="tool-switcher">
+    <button class="tool-btn active-pippit" id="btnPippit" onclick="switchTool('pippit')">
+      <span class="tool-icon">🎨</span> Pippit AI
+    </button>
+    <button class="tool-btn" id="btnFlow" onclick="switchTool('flow')">
+      <span class="tool-icon">🌊</span> Google Flow
+    </button>
+  </div>
+</div>
+
+<!-- TOOL INFO -->
+<div class="tool-info-outer">
+  <div id="toolInfo"></div>
+</div>
+
+<!-- ════════════════════════════════
+     PIPPIT FORM
+════════════════════════════════ -->
+<main id="pippitForm">
+
+  <div class="card">
+    <div class="card-title"><span class="num">01</span> Topik Pelajaran</div>
+    <label for="p-topik">Apa yang ingin dijelaskan dalam video?</label>
+    <input type="text" id="p-topik" placeholder="Contoh: Cara kerja fotosintesis pada tumbuhan" oninput="updatePippitPreview()">
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="num">02</span> Gaya Visual</div>
+    <label>Pilih gaya animasi video:</label>
+    <div class="pill-group">
+      <input type="radio" name="p-gaya" id="pg1" value="3 dimensi Pixar" checked onchange="updatePippitPreview()"><label for="pg1">🎨 3D Pixar</label>
+      <input type="radio" name="p-gaya" id="pg2" value="animasi 2 dimensi Disney" onchange="updatePippitPreview()"><label for="pg2">🖼️ 2D Disney</label>
+      <input type="radio" name="p-gaya" id="pg3" value="anime Jepang" onchange="updatePippitPreview()"><label for="pg3">⛩️ Anime</label>
+      <input type="radio" name="p-gaya" id="pg4" value="realistik sinematik" onchange="updatePippitPreview()"><label for="pg4">🎥 Realistik</label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="num">03</span> Durasi Video</div>
+    <label for="p-durasi">Berapa durasi yang diinginkan?</label>
+    <div class="select-wrap">
+      <select id="p-durasi" onchange="updatePippitPreview()">
+        <option value="60 detik">60 detik</option>
+        <option value="90 detik" selected>90 detik</option>
+        <option value="120 detik">120 detik</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="num">04</span> Karakter</div>
+    <label>Siapa karakter utama dalam video?</label>
+    <div class="pill-group">
+      <input type="radio" name="p-karakter" id="pk1" value="siswa laki-laki" checked onchange="updatePippitPreview()"><label for="pk1">🧑 Siswa laki-laki</label>
+      <input type="radio" name="p-karakter" id="pk2" value="siswa perempuan" onchange="updatePippitPreview()"><label for="pk2">👩 Siswa perempuan</label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="num">05</span> Latar Tempat</div>
+    <label for="p-latar">Di mana setting video berlangsung?</label>
+    <div class="select-wrap">
+      <select id="p-latar" onchange="updatePippitPreview()">
+        <option value="ruang kelas sekolah">🏫 Ruang Kelas</option>
+        <option value="laboratorium sekolah">🔬 Laboratorium</option>
+        <option value="taman sekolah">🌿 Taman Sekolah</option>
+        <option value="perpustakaan sekolah">📚 Perpustakaan</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="num">06</span> Media Penjelasan</div>
+    <label>Alat bantu yang digunakan (boleh lebih dari satu):</label>
+    <div class="pill-group">
+      <input type="checkbox" name="p-media" id="pm1" value="papan tulis" checked onchange="updatePippitPreview()"><label for="pm1">📝 Papan Tulis</label>
+      <input type="checkbox" name="p-media" id="pm2" value="proyektor" onchange="updatePippitPreview()"><label for="pm2">📽️ Proyektor</label>
+      <input type="checkbox" name="p-media" id="pm3" value="demonstrasi langsung" onchange="updatePippitPreview()"><label for="pm3">🔬 Demonstrasi</label>
+      <input type="checkbox" name="p-media" id="pm4" value="slide presentasi" onchange="updatePippitPreview()"><label for="pm4">🖥️ Slide</label>
+    </div>
+  </div>
+
+  <div class="card full-width">
+    <div class="card-title"><span class="step-dot"></span> Preview Prompt (Live)</div>
+    <div class="preview-box" id="pippitPreview">Isi form di atas untuk melihat preview prompt secara real-time...</div>
+  </div>
+
+  <div class="full-width">
+    <button class="btn-generate pippit-btn" onclick="generatePippit()">✦ Generate Prompt untuk Pippit AI ✦</button>
+  </div>
+
+  <div class="card full-width result-section" id="pippitResult">
+    <div class="result-header">
+      <div class="card-title" style="margin-bottom:0"><span class="step-dot"></span> Prompt Siap Pakai</div>
+      <span class="result-badge pippit">→ Paste langsung ke Pippit AI</span>
+    </div>
+    <div class="result-box pippit-result" id="pippitResultBox"></div>
+    <button class="btn-copy pippit-copy" id="pippitCopyBtn" onclick="doCopy('pippitResultBox','pippitCopyBtn','pippit-copy','pippit')">📋 Copy to Clipboard</button>
+  </div>
+
+</main>
+
+<!-- ════════════════════════════════
+     FLOW FORM
+════════════════════════════════ -->
+<main id="flowForm" class="flow-active" style="display:none">
+
+  <div class="card flow-card">
+    <div class="card-title flow"><span class="num">01</span> Topik Video</div>
+    <label for="f-topik">Apa materi yang ingin dijelaskan?</label>
+    <input type="text" id="f-topik" placeholder="Contoh: Proses terjadinya hujan asam" oninput="updateFlowPreview()">
+  </div>
+
+  <div class="card flow-card">
+    <div class="card-title flow"><span class="num">02</span> Nama Karakter</div>
+    <label for="f-nama">Nama karakter utama:</label>
+    <input type="text" id="f-nama" placeholder='Default: "Budi"' oninput="updateFlowPreview()">
+  </div>
+
+  <div class="card flow-card">
+    <div class="card-title flow"><span class="num">03</span> Gender Karakter</div>
+    <label>Jenis kelamin karakter:</label>
+    <div class="pill-group flow-pill">
+      <input type="radio" name="f-gender" id="fg1" value="Laki-laki" checked onchange="updateFlowPreview()"><label for="fg1">🧑 Laki-laki</label>
+      <input type="radio" name="f-gender" id="fg2" value="Perempuan" onchange="updateFlowPreview()"><label for="fg2">👩 Perempuan</label>
+    </div>
+  </div>
+
+  <div class="card flow-card">
+    <div class="card-title flow"><span class="num">04</span> Gaya Visual</div>
+    <label for="f-gaya">Pilih gaya animasi:</label>
+    <div class="select-wrap">
+      <select id="f-gaya" onchange="updateFlowPreview()">
+        <option value="Pixar 3D">🎨 Pixar 3D</option>
+        <option value="3D Realistik">🎥 3D Realistik</option>
+        <option value="Disney 2D">🖼️ Disney 2D</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card flow-card full-width">
+    <div class="card-title flow"><span class="num">05</span> Jumlah Scene</div>
+    <label>Berapa scene yang ingin dibuat? <em style="color:var(--orange)">(maks. 7 scene di free tier)</em></label>
+    <div class="slider-wrap">
+      <input type="range" id="f-scene" min="1" max="7" value="3" oninput="document.getElementById('sceneNum').textContent=this.value; updateFlowPreview()">
+      <div class="scene-badge" id="sceneNum">3</div>
+    </div>
+    <div class="scene-note">
+      ⚡ Free tier Flow AI: <strong>150 kredit</strong> &nbsp;|&nbsp; 1 scene = <strong>20 kredit</strong> &nbsp;|&nbsp; Maks. <strong>7 scene</strong> = 56 detik total
+    </div>
+  </div>
+
+  <div class="card flow-card full-width">
+    <div class="card-title flow"><span class="step-dot flow"></span> Preview Template ChatGPT (Live)</div>
+    <div class="preview-box" id="flowPreview">Isi form di atas untuk melihat preview...</div>
+  </div>
+
+  <div class="full-width">
+    <button class="btn-generate flow-btn" onclick="generateFlow()">🌊 Generate Template untuk ChatGPT ✦</button>
+  </div>
+
+  <div class="card flow-card full-width result-section" id="flowResult">
+    <div class="result-header">
+      <div class="card-title flow" style="margin-bottom:0"><span class="step-dot flow"></span> Template Siap Pakai</div>
+      <span class="result-badge flow">→ Paste ke ChatGPT dulu</span>
+    </div>
+    <div class="result-box flow-result" id="flowResultBox"></div>
+    <div class="dest-note flow">
+      <strong>📋 ALUR PENGGUNAAN</strong>
+      Copy teks di atas → Paste ke <strong>ChatGPT</strong> → ChatGPT membuat prompt scene-by-scene → Copy tiap scene ke <strong>Google Flow AI</strong> satu per satu.
+    </div>
+    <button class="btn-copy flow-copy" id="flowCopyBtn" onclick="doCopy('flowResultBox','flowCopyBtn','flow-copy','flow')">📋 Copy Template ke Clipboard</button>
+  </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  Dibuat dengan ♥ oleh &nbsp;<span>HIMSI UAJY</span>&nbsp; — Pengabdian Masyarakat &nbsp;|&nbsp; SMA PL Sedayu
+</footer>
+
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════
+   HELPERS
+══════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+const val = id => $( id)?.value.trim() ?? '';
+const radioVal = name => document.querySelector(`input[name="${name}"]:checked`)?.value ?? '';
+const checkList = name => [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(e=>e.value).join(', ') || 'papan tulis';
+
+function flashErr(id) {
+  const el = $(id); if (!el) return;
+  el.style.borderColor = 'var(--danger)'; el.focus();
+  setTimeout(() => el.style.borderColor = '', 1800);
+}
+
+function showSection(el) {
+  el.classList.remove('visible');
+  void el.offsetWidth;
+  el.classList.add('visible');
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ══════════════════════════════════════
+   TOOL SWITCHER
+══════════════════════════════════════ */
+let currentTool = 'pippit';
+
+const toolMeta = {
+  pippit: {
+    cls:'pippit', icon:'🎨', title:'MODE: PIPPIT AI',
+    desc:'Form di bawah menghasilkan <strong>prompt final yang langsung di-paste ke Pippit AI</strong>. Pippit akan men-generate video secara otomatis.'
+  },
+  flow: {
+    cls:'flow', icon:'🌊', title:'MODE: GOOGLE FLOW',
+    desc:'Form di bawah menghasilkan <strong>template untuk ChatGPT</strong>. Setelah di-paste ke ChatGPT, copy tiap scene prompt ke Google Flow satu per satu.'
+  }
+};
+
+function renderToolInfo(t) {
+  const m = toolMeta[t];
+  $('toolInfo').innerHTML = `<div class="tool-info-box ${m.cls}"><span class="info-icon">${m.icon}</span><div><b>${m.title}</b>${m.desc}</div></div>`;
+}
+
+function switchTool(t) {
+  currentTool = t;
+  $('btnPippit').className = 'tool-btn' + (t==='pippit' ? ' active-pippit' : '');
+  $('btnFlow').className   = 'tool-btn' + (t==='flow'   ? ' active-flow'   : '');
+  $('pippitForm').style.display = t==='pippit' ? 'grid' : 'none';
+  $('flowForm').style.display   = t==='flow'   ? 'grid' : 'none';
+  renderToolInfo(t);
+  if (t==='pippit') updatePippitPreview(); else updateFlowPreview();
+}
+
+/* ══════════════════════════════════════
+   PIPPIT
+══════════════════════════════════════ */
+function updatePippitPreview() {
+  const topik    = val('p-topik');
+  const gaya     = radioVal('p-gaya') || '3 dimensi Pixar';
+  const durasi   = val('p-durasi');
+  const karakter = radioVal('p-karakter') || 'siswa laki-laki';
+  const latar    = val('p-latar');
+  const media    = checkList('p-media');
+
+  const t = topik
+    ? `<span class="hl">${topik}</span>`
+    : `<span class="ph">[ketik topik pelajaran...]</span>`;
+
+  $('pippitPreview').innerHTML =
+    `Prompt video gaya <span class="hl">${gaya}</span>, ` +
+    `durasi <span class="hl">${durasi}</span>, karakter <span class="hl">${karakter}</span> seragam SMA. ` +
+    `Latar: <span class="hl">${latar}</span>, media: <span class="hl">${media}</span>. ` +
+    `Materi: ${t}. Kamera smooth motion. Visual konsisten.`;
+}
+
+function generatePippit() {
+  if (!val('p-topik')) { flashErr('p-topik'); return; }
+  const prompt =
+    `Buatkan prompt pembuatan video edukasi dengan gaya visual ${radioVal('p-gaya')||'3 dimensi Pixar'}, ` +
+    `dengan durasi ${val('p-durasi')}, gunakan narasi dialog bahasa Indonesia, ` +
+    `buat karakter ${radioVal('p-karakter')||'siswa laki-laki'} menggunakan baju seragam SMA Indonesia. ` +
+    `Dengan latar belakang ${val('p-latar')} dan menggunakan media penjelasan ${checkList('p-media')}. ` +
+    `Gunakan gaya kamera smooth motion. Untuk isi materi, karakter menjelaskan tentang ${val('p-topik')}. ` +
+    `Hasil visual konsisten dan mudah dipahami oleh siswa SMA.`;
+
+  $('pippitResultBox').textContent = prompt;
+  $('pippitCopyBtn').className = 'btn-copy pippit-copy';
+  $('pippitCopyBtn').textContent = '📋 Copy to Clipboard';
+  showSection($('pippitResult'));
+}
+
+/* ══════════════════════════════════════
+   FLOW
+══════════════════════════════════════ */
+function updateFlowPreview() {
+  const topik  = val('f-topik');
+  const nama   = val('f-nama') || 'Budi';
+  const gender = radioVal('f-gender') || 'Laki-laki';
+  const gaya   = val('f-gaya');
+  const scene  = $('f-scene')?.value || 3;
+
+  const t = topik
+    ? `<span class="hl-flow">${topik}</span>`
+    : `<span class="ph">[ketik topik...]</span>`;
+
+  $('flowPreview').innerHTML =
+    `Template untuk ChatGPT: Video edukasi tentang ${t}. ` +
+    `Karakter <span class="hl-flow">${gender}</span> remaja SMA bernama <span class="hl-flow">"${nama}"</span>, ` +
+    `gaya <span class="hl-flow">${gaya}</span>. ` +
+    `ChatGPT akan membuat <span class="hl-flow">${scene} scene</span> × 8 detik = ` +
+    `<span class="hl-flow">${scene*8} detik</span> total video.`;
+}
+
+function generateFlow() {
+  if (!val('f-topik')) { flashErr('f-topik'); return; }
+
+  const topik  = val('f-topik');
+  const nama   = val('f-nama') || 'Budi';
+  const gender = radioVal('f-gender') || 'Laki-laki';
+  const gaya   = val('f-gaya');
+  const scene  = $('f-scene')?.value || 3;
+
+  const template =
+    `Saya ingin membuat video edukasi tentang ${topik}. Karakter utamanya adalah ${gender} remaja berseragam SMA Indonesia (putih abu-abu) bernama "${nama}". Gunakan gaya ${gaya} dengan latar belakang ruang kelas. Buatkan saya prompt untuk ${scene} scene. Aturannya:\n` +
+    `- Setiap scene harus berdurasi tepat 8 detik.\n` +
+    `- Karakter harus konsisten penampilannya di semua scene.\n` +
+    `- Penjelasan materi menggunakan Bahasa Indonesia.\n` +
+    `- Buatkan dalam format yang tinggal copy-paste satu per satu ke Flow AI.\n` +
+    `- Berikan deskripsi visual detail untuk setiap scene (posisi duduk, ekspresi, latar belakang).`;
+
+  $('flowResultBox').textContent = template;
+  $('flowCopyBtn').className = 'btn-copy flow-copy';
+  $('flowCopyBtn').textContent = '📋 Copy Template ke Clipboard';
+  showSection($('flowResult'));
+}
+
+/* ══════════════════════════════════════
+   COPY
+══════════════════════════════════════ */
+function doCopy(boxId, btnId, baseClass, toolType) {
+  const text = $(boxId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = $(btnId);
+    btn.textContent = '✓ Tersalin!';
+    btn.classList.add('copied');
+
+    const toast = $('toast');
+    toast.textContent = '✓ Prompt berhasil disalin!';
+    toast.className = `show-${toolType}`;
+    setTimeout(() => toast.className = '', 2500);
+    setTimeout(() => {
+      btn.className = `btn-copy ${baseClass}`;
+      btn.textContent = toolType === 'flow' ? '📋 Copy Template ke Clipboard' : '📋 Copy to Clipboard';
+    }, 3000);
+  });
+}
+
+/* ══════════════════════════════════════
+   THEME
+══════════════════════════════════════ */
+let isDark = true;
+$('themeBtn').addEventListener('click', () => {
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  $('themeBtn').textContent = isDark ? '🌙' : '☀️';
+});
+
+/* ══════════════════════════════════════
+   INIT
+══════════════════════════════════════ */
+renderToolInfo('pippit');
+updatePippitPreview();
+</script>
+</body>
+</html>
